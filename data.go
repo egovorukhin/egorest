@@ -6,33 +6,33 @@ import (
 	"errors"
 )
 
-type Body struct {
+type Data struct {
 	FormatBody FormatBody
-	Data       interface{}
+	Body       interface{}
 }
 
 //Marshal JSON XML
-func (body Body) marshal() ([]byte, error) {
-	switch body.FormatBody {
+func (data Data) marshal() ([]byte, error) {
+	switch data.FormatBody {
 	case JSON:
-		return body.marshalJson()
+		return data.marshalJson()
 	case XML:
-		return body.marshalXml()
+		return data.marshalXml()
 	default:
 		return nil, errors.New("Неизвестный формат данных")
 	}
 }
 
-func (body Body) marshalJson() ([]byte, error) {
-	b, err := json.Marshal(&body.Data)
+func (data Data) marshalJson() ([]byte, error) {
+	b, err := json.Marshal(&data.Body)
 	if err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-func (body Body) marshalXml() ([]byte, error) {
-	b, err := xml.Marshal(&body.Data)
+func (data Data) marshalXml() ([]byte, error) {
+	b, err := xml.Marshal(&data.Body)
 	if err != nil {
 		return nil, err
 	}

@@ -1,13 +1,13 @@
 package egorest
 
 type Request struct {
-	Method string
+	Method  string
 	Headers map[string]string
-	Body *Body
+	Data    *Data
 }
 
 type Header struct {
-	Name string
+	Name  string
 	Value string
 }
 
@@ -16,7 +16,7 @@ func NewRequest(method string) Request {
 	return Request{
 		Method:  method,
 		Headers: map[string]string{},
-		Body:    nil,
+		Data:    nil,
 	}
 }
 
@@ -37,9 +37,9 @@ func (r Request) SetHeader(headers ...Header) Request {
 //Устанавливаем формат данных и структуру передаваемых данных
 func (r Request) SetBody(formatBody FormatBody, body interface{}) Request {
 	r.AddHeader("Accept", formatBody.String())
-	r.Body = &Body{
+	r.Data = &Data{
 		FormatBody: formatBody,
-		Data:       body,
+		Body:       body,
 	}
 	return r
 }

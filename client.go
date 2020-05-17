@@ -14,36 +14,36 @@ import (
 const VERSION = "0.1.1"
 
 const (
-	GET = "GET"
-	POST = "POST"
-	PUT = "PUT"
-	DELETE = "DELETE"
-	HEAD = "HEAD"
-	PATCH = "PATCH"
+	GET     = "GET"
+	POST    = "POST"
+	PUT     = "PUT"
+	DELETE  = "DELETE"
+	HEAD    = "HEAD"
+	PATCH   = "PATCH"
 	OPTIONS = "OPTIONS"
-	TRACE = "TRACE"
+	TRACE   = "TRACE"
 	CONNECT = "CONNECT"
 )
 
 type Client struct {
-	Hostname string
-	Port int
-	Secure bool
-	Timeout int
-	Proxy *url.URL
+	Hostname  string
+	Port      int
+	Secure    bool
+	Timeout   int
+	Proxy     *url.URL
 	BasicAuth *BasicAuth
-	Request Request
+	Request   Request
 }
 
 //Создаём новый экземпляр Client
 func NewClient(hostname string, port int, secure bool) Client {
 	return Client{
-		Hostname: hostname,
-		Port:     port,
-		Secure:   secure,
-		Proxy: nil,
+		Hostname:  hostname,
+		Port:      port,
+		Secure:    secure,
+		Proxy:     nil,
 		BasicAuth: nil,
-		Timeout: 30,
+		Timeout:   30,
 	}
 }
 
@@ -85,9 +85,9 @@ func (client Client) Send(route string, responseBody interface{}) error {
 
 	//Преобразуем сируктуру в набор байт для отправки
 	var body []byte
-	if client.Request.Body != nil {
+	if client.Request.Data != nil {
 		var err error
-		body, err = client.Request.Body.marshal()
+		body, err = client.Request.Data.marshal()
 		if err != nil {
 			return err
 		}
@@ -98,8 +98,8 @@ func (client Client) Send(route string, responseBody interface{}) error {
 		Timeout: time.Duration(client.Timeout) * time.Second,
 		Transport: &http.Transport{
 			//Это на случай не подтверждённого сертификата (ОПАСНО)
-			TLSClientConfig:        &tls.Config{
-				InsecureSkipVerify:          true,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
 			},
 			//Прокси сервер, если nil то не используем
 			Proxy: http.ProxyURL(client.Proxy),
@@ -108,7 +108,7 @@ func (client Client) Send(route string, responseBody interface{}) error {
 
 	req, err := http.NewRequest(
 		client.Request.Method,
-		client.url() + route,
+		client.url()+route,
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
@@ -121,7 +121,7 @@ func (client Client) Send(route string, responseBody interface{}) error {
 	}
 
 	//Добавляем заголовки
-	req.Header.Add("User-Agent", "EgoRest/" + VERSION)
+	req.Header.Add("User-Agent", "EgoRest/"+VERSION)
 	for key, value := range client.Request.Headers {
 		req.Header.Add(key, value)
 	}
@@ -143,7 +143,8 @@ func (client Client) Send(route string, responseBody interface{}) error {
 	//Если 200 значит десериализуем данные
 	switch resp.StatusCode {
 	case 200:
-		//Переводим все это дело в структуру
+		//Переводим все это дело в структуру,
+		//но сначала находим в каком формате данные
 		err = GetFormatBody(resp.Header.Get("Content-Type")).unmarshal(body, &responseBody)
 		if err != nil {
 			return err
