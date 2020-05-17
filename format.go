@@ -16,16 +16,19 @@ func (f FormatBody) String() string {
 const (
 	NONE FormatBody = "none"
 	JSON FormatBody = "application/json"
-	XML FormatBody = "application/xml"
+	XML  FormatBody = "application/xml"
 )
 
 //Unmarshal JSON XML
 func (f FormatBody) unmarshal(data []byte, v interface{}) error {
 	switch f {
-	case JSON: return f.unmarshalJson(data, v)
-	case XML: return f.unmarshalXml(data, v)
+	case JSON:
+		return f.unmarshalJson(data, v)
+	case XML:
+		return f.unmarshalXml(data, v)
+	default:
+		return errors.New("Неизвестный формат данных")
 	}
-	return errors.New("Неизвестный формат данных")
 }
 
 func (f FormatBody) unmarshalJson(data []byte, v interface{}) error {

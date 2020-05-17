@@ -8,16 +8,19 @@ import (
 
 type Body struct {
 	FormatBody FormatBody
-	Data interface{}
+	Data       interface{}
 }
 
 //Marshal JSON XML
 func (body Body) marshal() ([]byte, error) {
 	switch body.FormatBody {
-	case JSON: return body.marshalJson()
-	case XML: return body.marshalXml()
+	case JSON:
+		return body.marshalJson()
+	case XML:
+		return body.marshalXml()
+	default:
+		return nil, errors.New("Неизвестный формат данных")
 	}
-	return nil, errors.New("Неизвестный формат данных")
 }
 
 func (body Body) marshalJson() ([]byte, error) {
