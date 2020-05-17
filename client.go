@@ -81,7 +81,7 @@ func (client Client) url() string {
 }
 
 //Отправка данных на сервер,
-func (client Client) Send(route string, responseBody interface{}) error {
+func (client Client) Execute(route string, responseBody interface{}) error {
 
 	//Преобразуем сируктуру в набор байт для отправки
 	var body []byte

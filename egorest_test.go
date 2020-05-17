@@ -38,7 +38,7 @@ func TestClient_Send(t *testing.T) {
 	err := NewClient("dls.hq.bc", 80, false).
 		SetTimeout(15).
 		SetRequest(NewRequest(GET)).
-		Send("/api/place/city", &responseBody)
+		Execute("/api/place/city", &responseBody)
 	if err != nil {
 		t.Error(err)
 	}
