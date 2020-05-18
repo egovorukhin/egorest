@@ -36,7 +36,7 @@ type City struct {
 func TestClient_Send(t *testing.T) {
 
 	responseBody := Response{}
-	req := NewRequest(GET, "/api/place/city").
+	req := NewRequest(GET, "api/place/city").
 		SetHeader(SetHeader("Connection", "Keep-Alive"))
 
 	err := NewClient("dls.hq.bc", 80, false).

@@ -14,9 +14,10 @@ func (f FormatBody) String() string {
 }
 
 const (
-	NONE FormatBody = "none"
-	JSON FormatBody = "application/json"
-	XML  FormatBody = "application/xml"
+	NONE     FormatBody = "none"
+	JSON     FormatBody = "application/json"
+	XML      FormatBody = "application/xml"
+	TEXT_XML FormatBody = "text/xml"
 )
 
 //Unmarshal JSON XML
@@ -55,8 +56,9 @@ func getFormatBody(s string) FormatBody {
 	}
 
 	//XML
-	if strings.Contains(s, XML.String()) {
+	if strings.Contains(s, XML.String()) || strings.Contains(s, TEXT_XML.String()) {
 		return XML
 	}
+
 	return NONE
 }
