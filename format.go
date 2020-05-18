@@ -47,15 +47,16 @@ func (f FormatBody) unmarshalXml(data []byte, v interface{}) error {
 	return nil
 }
 
-func GetFormatBody(s string) FormatBody {
+func getFormatBody(s string) FormatBody {
 
 	//JSON
 	if strings.Contains(s, JSON.String()) {
 		return JSON
 	}
+
 	//XML
 	if strings.Contains(s, XML.String()) {
-		return JSON
+		return XML
 	}
 	return NONE
 }

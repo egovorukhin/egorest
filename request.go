@@ -3,6 +3,7 @@ package egorest
 type Request struct {
 	Method  string
 	Headers map[string]string
+	Route   string
 	Data    *Data
 }
 
@@ -11,35 +12,51 @@ type Header struct {
 	Value string
 }
 
+func SetHeader(name, value string) Header {
+	return Header{
+		Name:  name,
+		Value: value,
+	}
+}
+
 //Возвращаем экземпляр запроса
-func NewRequest(method string) Request {
+func NewRequest(method, route string) Request {
 	return Request{
 		Method:  method,
 		Headers: map[string]string{},
+		Route:   route,
 		Data:    nil,
 	}
 }
 
 //Добавляем заголовки
-func (r Request) AddHeader(name, value string) Request {
+func (r *Request) addHeader(name, value string) {
 	r.Headers[name] = value
-	return r
 }
 
-//Устанавливаем заголовки
 func (r Request) SetHeader(headers ...Header) Request {
 	for _, h := range headers {
-		r.AddHeader(h.Name, h.Value)
+		r.addHeader(h.Name, h.Value)
 	}
 	return r
 }
 
 //Устанавливаем формат данных и структуру передаваемых данных
-func (r Request) SetBody(formatBody FormatBody, body interface{}) Request {
-	r.AddHeader("Accept", formatBody.String())
+func (r Request) setBody(formatBody FormatBody, body interface{}) Request {
+	r.addHeader("Accept", formatBody.String())
 	r.Data = &Data{
 		FormatBody: formatBody,
 		Body:       body,
 	}
 	return r
+}
+
+//Body в формате Json
+func (r Request) Json(body interface{}) Request {
+	return r.setBody(JSON, body)
+}
+
+//Body в формате Xml
+func (r Request) Xml(body interface{}) Request {
+	return r.setBody(XML, body)
 }

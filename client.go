@@ -32,7 +32,6 @@ type Client struct {
 	Timeout   int
 	Proxy     *url.URL
 	BasicAuth *BasicAuth
-	Request   Request
 }
 
 //Создаём новый экземпляр Client
@@ -45,12 +44,6 @@ func NewClient(hostname string, port int, secure bool) Client {
 		BasicAuth: nil,
 		Timeout:   30,
 	}
-}
-
-//Устанавливаем заголовки
-func (client Client) SetRequest(r Request) Client {
-	client.Request = r
-	return client
 }
 
 //Учтанавливаем Basic авторизацию
@@ -80,16 +73,16 @@ func (client Client) url() string {
 	return fmt.Sprintf("%s://%s:%d/", s, client.Hostname, client.Port)
 }
 
-//Отправка данных на сервер,
-func (client Client) Execute(route string, responseBody interface{}) error {
+//Отправляем запрос на сервер
+func (client Client) Send(r Request) (*http.Response, error) {
 
 	//Преобразуем сируктуру в набор байт для отправки
 	var body []byte
-	if client.Request.Data != nil {
+	if r.Data != nil {
 		var err error
-		body, err = client.Request.Data.marshal()
+		body, err = r.Data.marshal()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -107,12 +100,12 @@ func (client Client) Execute(route string, responseBody interface{}) error {
 	}
 
 	req, err := http.NewRequest(
-		client.Request.Method,
-		client.url()+route,
+		r.Method,
+		client.url()+r.Route,
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//На случай аторизации (Только Basic)
@@ -122,12 +115,19 @@ func (client Client) Execute(route string, responseBody interface{}) error {
 
 	//Добавляем заголовки
 	req.Header.Add("User-Agent", "EgoRest/"+VERSION)
-	for key, value := range client.Request.Headers {
+	for key, value := range r.Headers {
 		req.Header.Add(key, value)
 	}
 
 	//Поехали...
-	resp, err := httpClient.Do(req)
+	return httpClient.Do(req)
+}
+
+//Отправка данных на сервер, ждём в ответе какую то структуру
+func (client Client) Execute(r Request, responseBody interface{}) error {
+
+	//Отправляем запрос
+	resp, err := client.Send(r)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (client Client) Execute(route string, responseBody interface{}) error {
 	defer resp.Body.Close()
 
 	//Получаем из ответа набор байт
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (client Client) Execute(route string, responseBody interface{}) error {
 	case 200:
 		//Переводим все это дело в структуру,
 		//но сначала находим в каком формате данные
-		err = GetFormatBody(resp.Header.Get("Content-Type")).unmarshal(body, &responseBody)
+		err = getFormatBody(resp.Header.Get("Content-Type")).unmarshal(body, &responseBody)
 		if err != nil {
 			return err
 		}
