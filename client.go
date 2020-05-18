@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.1.1"
+const VERSION = "0.1.6"
 
 const (
 	GET     = "GET"
@@ -26,6 +26,7 @@ const (
 )
 
 type Client struct {
+	Url       *url.URL
 	Hostname  string
 	Port      int
 	Secure    bool
@@ -44,6 +45,20 @@ func NewClient(hostname string, port int, secure bool) *Client {
 		BasicAuth: nil,
 		Timeout:   30,
 	}
+}
+
+func NewClientByUri(uri string) (*Client, error) {
+	Url, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		Url:       Url,
+		Timeout:   30,
+		Proxy:     nil,
+		BasicAuth: nil,
+	}, nil
 }
 
 //Учтанавливаем Basic авторизацию
@@ -66,6 +81,11 @@ func (client *Client) SetTimeout(timeout int) *Client {
 
 //Формируем строк для http запроса
 func (client Client) url(route string) string {
+
+	if client.Url != nil {
+		return client.Url.String()
+	}
+
 	s := "http"
 	if client.Secure {
 		s = "https"
@@ -79,7 +99,7 @@ func (client Client) url(route string) string {
 }
 
 //Отправляем запрос на сервер
-func (client Client) Send(r Request) (*http.Response, error) {
+func (client Client) Send(r *Request) (*http.Response, error) {
 
 	//Преобразуем сируктуру в набор байт для отправки
 	var body []byte
@@ -129,7 +149,7 @@ func (client Client) Send(r Request) (*http.Response, error) {
 }
 
 //Отправка данных на сервер, ждём в ответе какую то структуру
-func (client Client) Execute(r Request, responseBody interface{}) error {
+func (client Client) Execute(r *Request, responseBody interface{}) error {
 
 	//Отправляем запрос
 	resp, err := client.Send(r)

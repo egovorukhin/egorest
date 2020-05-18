@@ -36,18 +36,19 @@ type City struct {
 func TestClient_Send(t *testing.T) {
 
 	responseBody := Response{}
+	//Execute
 	req := NewRequest(GET, "api/place/city").
-		SetHeader(SetHeader("Connection", "Keep-Alive"))
+		SetHeader(SetHeader("Connection", "keep-alive"))
 
 	err := NewClient("dls.hq.bc", 80, false).
 		SetTimeout(15).
-		SetBasicAuth().
 		Execute(req, &responseBody)
 	if err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Struct: %v\n", responseBody)
 
+	//Send
 	city := City{
 		Name: "Алматы",
 	}
@@ -70,4 +71,18 @@ func TestClient_Send(t *testing.T) {
 	}
 
 	fmt.Printf("Response.Body: %s\n", body)
+
+	//By Uri
+	client, err := NewClientByUri("http://dls.hq.bc/api/place/city")
+	if err != nil {
+		t.Error(err)
+	}
+	client.SetTimeout(15)
+	err = client.Execute(NewRequest(GET, ""), &responseBody)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Printf("Struct: %v\n", responseBody)
+
 }
