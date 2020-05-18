@@ -41,6 +41,7 @@ func TestClient_Send(t *testing.T) {
 
 	err := NewClient("dls.hq.bc", 80, false).
 		SetTimeout(15).
+		SetBasicAuth().
 		Execute(req, &responseBody)
 	if err != nil {
 		t.Error(err)

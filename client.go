@@ -47,21 +47,21 @@ func NewClient(hostname string, port int, secure bool) *Client {
 }
 
 //Учтанавливаем Basic авторизацию
-func (client *Client) SetBasicAuth(name, password string) Client {
+func (client *Client) SetBasicAuth(name, password string) *Client {
 	client.BasicAuth = SetBasicAuth(name, password)
-	return *client
+	return client
 }
 
 //Устанавливаем прокси сервер
-func (client *Client) SetProxy(proxy string) Client {
+func (client *Client) SetProxy(proxy string) *Client {
 	client.Proxy, _ = url.Parse(proxy)
-	return *client
+	return client
 }
 
 //Устанавливаем таймаут соединения
-func (client *Client) SetTimeout(timeout int) Client {
+func (client *Client) SetTimeout(timeout int) *Client {
 	client.Timeout = timeout
-	return *client
+	return client
 }
 
 //Формируем строк для http запроса
