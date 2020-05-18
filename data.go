@@ -7,13 +7,13 @@ import (
 )
 
 type Data struct {
-	FormatBody FormatBody
-	Body       interface{}
+	ContentType ContentType
+	Body        interface{}
 }
 
 //Marshal JSON XML
 func (data Data) marshal() ([]byte, error) {
-	switch data.FormatBody {
+	switch data.ContentType {
 	case JSON:
 		return data.marshalJson()
 	case XML:

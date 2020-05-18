@@ -42,11 +42,12 @@ func (r Request) SetHeader(headers ...Header) Request {
 }
 
 //Устанавливаем формат данных и структуру передаваемых данных
-func (r Request) setBody(formatBody FormatBody, body interface{}) Request {
-	r.addHeader("Accept", formatBody.String())
+func (r Request) setBody(contentType ContentType, body interface{}) Request {
+	r.addHeader("Accept", contentType.String())
+	r.addHeader("Content-Type", contentType.String())
 	r.Data = &Data{
-		FormatBody: formatBody,
-		Body:       body,
+		ContentType: contentType,
+		Body:        body,
 	}
 	return r
 }
