@@ -47,6 +47,13 @@ func TestClient_Send(t *testing.T) {
 	}
 	fmt.Printf("Struct: %v\n", responseBody)
 
+	city := City{
+		Name: "Алматы",
+	}
+	req.Data = &Data{
+		ContentType: JSON,
+		Body:        city,
+	}
 	resp, err := NewClient("dls.hq.bc", 80, false).
 		SetTimeout(15).
 		Send(req)

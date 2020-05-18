@@ -20,8 +20,8 @@ func SetHeader(name, value string) Header {
 }
 
 //Возвращаем экземпляр запроса
-func NewRequest(method, route string) Request {
-	return Request{
+func NewRequest(method, route string) *Request {
+	return &Request{
 		Method:  method,
 		Headers: map[string]string{},
 		Route:   route,
@@ -34,22 +34,22 @@ func (r *Request) addHeader(name, value string) {
 	r.Headers[name] = value
 }
 
-func (r Request) SetHeader(headers ...Header) Request {
+func (r *Request) SetHeader(headers ...Header) Request {
 	for _, h := range headers {
 		r.addHeader(h.Name, h.Value)
 	}
-	return r
+	return *r
 }
 
 //Устанавливаем формат данных и структуру передаваемых данных
-func (r Request) setBody(contentType ContentType, body interface{}) Request {
+func (r *Request) setBody(contentType ContentType, body interface{}) Request {
 	r.addHeader("Accept", contentType.String())
 	r.addHeader("Content-Type", contentType.String())
 	r.Data = &Data{
 		ContentType: contentType,
 		Body:        body,
 	}
-	return r
+	return *r
 }
 
 //Body в формате Json
