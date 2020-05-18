@@ -65,12 +65,17 @@ func (client Client) SetTimeout(timeout int) Client {
 }
 
 //Формируем строк для http запроса
-func (client Client) url() string {
+func (client Client) url(route string) string {
 	s := "http"
 	if client.Secure {
 		s = "https"
 	}
-	return fmt.Sprintf("%s://%s:%d/", s, client.Hostname, client.Port)
+	if route != "" {
+		if route[0] == '/' {
+			route = route[1:]
+		}
+	}
+	return fmt.Sprintf("%s://%s:%d/%s", s, client.Hostname, client.Port, route)
 }
 
 //Отправляем запрос на сервер
@@ -101,7 +106,7 @@ func (client Client) Send(r Request) (*http.Response, error) {
 
 	req, err := http.NewRequest(
 		r.Method,
-		client.url()+r.Route,
+		client.url(r.Route),
 		bytes.NewBuffer(body),
 	)
 	if err != nil {
