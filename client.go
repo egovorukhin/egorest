@@ -153,11 +153,12 @@ func (client Client) Execute(r *Request, responseBody interface{}) error {
 
 	//Отправляем запрос
 	resp, err := client.Send(r)
+
+	defer resp.Body.Close()
+
 	if err != nil {
 		return err
 	}
-
-	defer resp.Body.Close()
 
 	//Получаем из ответа набор байт
 	body, err := ioutil.ReadAll(resp.Body)
