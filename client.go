@@ -154,7 +154,9 @@ func (client Client) Execute(r *Request, responseBody interface{}) error {
 	//Отправляем запрос
 	resp, err := client.Send(r)
 
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if err != nil {
 		return err
