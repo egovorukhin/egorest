@@ -33,10 +33,11 @@ func (f ContentType) unmarshal(data []byte, v interface{}) error {
 	case XML:
 		return f.unmarshalXml(data, v)
 	default:
-		return errors.New("Неизвестный формат данных")
+		return f.unmarshalNone(data, v)
 	}
 }
 
+//Unmarshal JSON
 func (f ContentType) unmarshalJson(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, v)
 	if err != nil {
@@ -45,11 +46,18 @@ func (f ContentType) unmarshalJson(data []byte, v interface{}) error {
 	return nil
 }
 
+//Unmarshal XML
 func (f ContentType) unmarshalXml(data []byte, v interface{}) error {
 	err := xml.Unmarshal(data, v)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+//Unmarshal TEXT or Unknown -> Text
+func (f ContentType) unmarshalNone(data []byte, v interface{}) error {
+	v = string(data)
 	return nil
 }
 

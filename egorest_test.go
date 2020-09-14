@@ -40,7 +40,11 @@ func TestClient_Send(t *testing.T) {
 	req := NewRequest(GET, "api/place/city").
 		SetHeader(SetHeader("Connection", "keep-alive"))
 
+	var user string
+	var password string
+
 	err := NewClient("dls.hq.bc", 80, false).
+		SetBasicAuth(user, password).
 		SetTimeout(15).
 		Execute(req, &responseBody)
 	if err != nil {
