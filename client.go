@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -79,11 +80,15 @@ func (client *Client) SetTimeout(timeout int) *Client {
 	return client
 }
 
+func (Client) trim(s string) string {
+	return strings.ReplaceAll(s, " ", "%20")
+}
+
 //Формируем строк для http запроса
 func (client Client) url(route string) string {
 
 	if client.Url != nil {
-		return client.Url.String()
+		return client.trim(client.Url.String())
 	}
 
 	s := "http"
@@ -95,6 +100,9 @@ func (client Client) url(route string) string {
 			route = route[1:]
 		}
 	}
+	//Пробел меняем на спец символ
+	route = client.trim(route)
+
 	return fmt.Sprintf("%s://%s:%d/%s", s, client.Hostname, client.Port, route)
 }
 
