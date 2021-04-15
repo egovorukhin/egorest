@@ -35,9 +35,9 @@ type City struct {
 
 func TestClient_Send(t *testing.T) {
 
-	responseBody := Response{}
+	var city []City
 	//Execute
-	req := NewRequest(GET, "api/place/city").
+	req := NewRequest(GET, "place/city").
 		SetHeader(SetHeader("Connection", "keep-alive"))
 
 	var user string
@@ -46,22 +46,23 @@ func TestClient_Send(t *testing.T) {
 	err := NewClient("dls.hq.bc", 80, false).
 		SetBasicAuth(user, password).
 		SetTimeout(15).
-		Execute(req, &responseBody)
+		SetRoute("api/").
+		Execute(req, &city)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("Struct: %v\n", responseBody)
+	fmt.Printf("Struct: %v\n", city)
 
-	//Send
-	city := City{
-		Name: "Алматы",
-	}
+	//Send Filter
 	req.Data = &Data{
 		ContentType: JSON,
-		Body:        city,
+		Body: City{
+			Name: "Алматы",
+		},
 	}
 	resp, err := NewClient("dls.hq.bc", 80, false).
 		SetTimeout(15).
+		SetRoute("api/").
 		Send(req)
 	if err != nil {
 		t.Error(err)
@@ -82,11 +83,11 @@ func TestClient_Send(t *testing.T) {
 		t.Error(err)
 	}
 	client.SetTimeout(15)
-	err = client.Execute(NewRequest(GET, ""), &responseBody)
+	err = client.Execute(NewRequest(GET, ""), &city)
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Printf("Struct: %v\n", responseBody)
+	fmt.Printf("Struct: %v\n", city)
 
 }

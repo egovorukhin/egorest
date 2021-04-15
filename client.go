@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.1.6"
+const VERSION = "0.1.7"
 
 const (
 	GET     = "GET"
@@ -32,6 +32,7 @@ type Client struct {
 	Port      int
 	Secure    bool
 	Timeout   int
+	Route     string
 	Proxy     *url.URL
 	BasicAuth *BasicAuth
 }
@@ -62,21 +63,27 @@ func NewClientByUri(uri string) (*Client, error) {
 	}, nil
 }
 
-//Учтанавливаем Basic авторизацию
+// SetBasicAuth Учтанавливаем Basic авторизацию
 func (client *Client) SetBasicAuth(name, password string) *Client {
 	client.BasicAuth = SetBasicAuth(name, password)
 	return client
 }
 
-//Устанавливаем прокси сервер
+// SetProxy Устанавливаем прокси сервер
 func (client *Client) SetProxy(proxy string) *Client {
 	client.Proxy, _ = url.Parse(proxy)
 	return client
 }
 
-//Устанавливаем таймаут соединения
+// SetTimeout Устанавливаем таймаут соединения
 func (client *Client) SetTimeout(timeout int) *Client {
 	client.Timeout = timeout
+	return client
+}
+
+// SetRoute Добавляем маршрут, он будет подставляться перед маршрутами указанными в Request
+func (client *Client) SetRoute(route string) *Client {
+	client.Route = route
 	return client
 }
 
@@ -100,13 +107,21 @@ func (client Client) url(route string) string {
 			route = route[1:]
 		}
 	}
+	if client.Route != "" {
+		if client.Route[0] == '/' {
+			client.Route = route[1:]
+		} else if client.Route[len(client.Route)-1] == '/' {
+			client.Route = client.Route[:len(client.Route)-1]
+		}
+	}
 	//Пробел меняем на спец символ
 	route = client.trim(route)
+	client.Route = client.trim(client.Route)
 
-	return fmt.Sprintf("%s://%s:%d/%s", s, client.Hostname, client.Port, route)
+	return fmt.Sprintf("%s://%s:%d/%s/%s", s, client.Hostname, client.Port, client.Route, route)
 }
 
-//Отправляем запрос на сервер
+// Send Отправляем запрос на сервер
 func (client Client) Send(r *Request) (*http.Response, error) {
 
 	//Преобразуем сируктуру в набор байт для отправки
@@ -156,7 +171,7 @@ func (client Client) Send(r *Request) (*http.Response, error) {
 	return httpClient.Do(req)
 }
 
-//Отправка данных на сервер, ждём в ответе какую то структуру
+// Execute Отправка данных на сервер, ждём в ответе какую то структуру
 func (client Client) Execute(r *Request, responseBody interface{}) error {
 
 	//Отправляем запрос
