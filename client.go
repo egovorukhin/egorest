@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.1.7"
+const VERSION = "0.2.6"
 
 const (
 	GET     = "GET"
