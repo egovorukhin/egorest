@@ -109,8 +109,9 @@ func (client Client) url(route string) string {
 	}
 	if client.Route != "" {
 		if client.Route[0] == '/' {
-			client.Route = route[1:]
-		} else if client.Route[len(client.Route)-1] == '/' {
+			client.Route = client.Route[1:]
+		}
+		if client.Route[len(client.Route)-1] == '/' {
 			client.Route = client.Route[:len(client.Route)-1]
 		}
 	}
