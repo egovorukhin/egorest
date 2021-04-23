@@ -37,7 +37,7 @@ func TestClient_Send(t *testing.T) {
 
 	var city []City
 	//Execute
-	req := NewRequest(GET, "place/city").
+	req := NewRequest(GET, "?place/city").
 		SetHeader(SetHeader("Connection", "keep-alive"))
 
 	var user string

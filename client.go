@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.2.7"
+const VERSION = "0.2.8"
 
 const (
 	GET     = "GET"
@@ -103,8 +103,8 @@ func (client Client) url(route string) string {
 		s = "https"
 	}
 	if route != "" {
-		if route[0] == '/' {
-			route = route[1:]
+		if route[0] != '/' && route[0] != '?' {
+			route = "/" + route
 		}
 	}
 	if client.Route != "" {
@@ -119,7 +119,7 @@ func (client Client) url(route string) string {
 	route = client.trim(route)
 	client.Route = client.trim(client.Route)
 
-	return fmt.Sprintf("%s://%s:%d/%s/%s", s, client.Hostname, client.Port, client.Route, route)
+	return fmt.Sprintf("%s://%s:%d/%s%s", s, client.Hostname, client.Port, client.Route, route)
 }
 
 // Send Отправляем запрос на сервер
