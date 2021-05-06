@@ -111,7 +111,7 @@ func (client Client) url(route string) string {
 		if client.Route[0] == '/' {
 			client.Route = client.Route[1:]
 		}
-		if client.Route[len(client.Route)-1] == '/' {
+		if client.Route[len(client.Route)-1] == '/' && route != "" {
 			client.Route = client.Route[:len(client.Route)-1]
 		}
 	}
