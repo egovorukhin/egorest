@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.2.10"
+const VERSION = "0.2.11"
 
 const (
 	GET     = "GET"
@@ -108,8 +108,8 @@ func (client Client) url(route string) string {
 		}
 	}
 	if client.Route != "" {
-		if client.Route[0] == '/' {
-			client.Route = client.Route[1:]
+		if client.Route[0] != '/' {
+			client.Route = "/" + client.Route
 		}
 		if len(client.Route) > 0 && client.Route[len(client.Route)-1] == '/' && route != "" {
 			client.Route = client.Route[:len(client.Route)-1]
@@ -119,7 +119,7 @@ func (client Client) url(route string) string {
 	route = client.trim(route)
 	client.Route = client.trim(client.Route)
 
-	return fmt.Sprintf("%s://%s:%d/%s%s", s, client.Hostname, client.Port, client.Route, route)
+	return fmt.Sprintf("%s://%s:%d%s%s", s, client.Hostname, client.Port, client.Route, route)
 }
 
 // Send Отправляем запрос на сервер
