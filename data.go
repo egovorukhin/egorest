@@ -1,6 +1,7 @@
 package egorest
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -8,7 +9,7 @@ import (
 )
 
 type Data struct {
-	ContentType ContentType
+	ContentType string
 	Body        interface{}
 }
 
@@ -19,13 +20,13 @@ func (f ContentType) String() string {
 }
 
 const (
-	NONE     ContentType = "none"
-	JSON     ContentType = "application/json"
-	XML      ContentType = "application/xml"
-	TEXT_XML ContentType = "text/xml"
+	NONE    ContentType = "none"
+	JSON    ContentType = "application/json"
+	XML     ContentType = "application/xml"
+	TextXml ContentType = "text/xml"
 )
 
-//Unmarshal JSON XML
+// Unmarshal JSON XML
 func (f ContentType) unmarshal(data []byte, v interface{}) error {
 	switch f {
 	case JSON:
@@ -37,7 +38,7 @@ func (f ContentType) unmarshal(data []byte, v interface{}) error {
 	}
 }
 
-//Unmarshal JSON
+// Unmarshal JSON
 func (f ContentType) unmarshalJson(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, v)
 	if err != nil {
@@ -46,7 +47,7 @@ func (f ContentType) unmarshalJson(data []byte, v interface{}) error {
 	return nil
 }
 
-//Unmarshal XML
+// Unmarshal XML
 func (f ContentType) unmarshalXml(data []byte, v interface{}) error {
 	err := xml.Unmarshal(data, v)
 	if err != nil {
@@ -55,7 +56,7 @@ func (f ContentType) unmarshalXml(data []byte, v interface{}) error {
 	return nil
 }
 
-//Unmarshal TEXT or Unknown -> Text
+// Unmarshal TEXT or Unknown -> Text
 func (f ContentType) unmarshalNone(data []byte, v interface{}) error {
 	v = string(data)
 	return nil
@@ -67,25 +68,31 @@ func getFormatBody(s string) ContentType {
 	if strings.Contains(s, JSON.String()) {
 		return JSON
 	}
-
 	//XML
-	if strings.Contains(s, XML.String()) || strings.Contains(s, TEXT_XML.String()) {
+	if strings.Contains(s, XML.String()) || strings.Contains(s, TextXml.String()) {
 		return XML
 	}
 
 	return NONE
 }
 
-//Marshal JSON XML
-func (data Data) marshal() ([]byte, error) {
-	switch data.ContentType {
+// Marshal JSON XML
+func (data Data) marshal() (bytes.Buffer, error) {
+	var body []byte
+	err := errors.New("неизвестный формат данных")
+	switch ContentType(data.ContentType) {
 	case JSON:
-		return data.marshalJson()
+		body, err = data.marshalJson()
+		break
 	case XML:
-		return data.marshalXml()
+		body, err = data.marshalXml()
+		break
 	default:
-		return nil, errors.New("Неизвестный формат данных")
+		if buf, ok := data.Body.(bytes.Buffer); ok {
+			return buf, nil
+		}
 	}
+	return *bytes.NewBuffer(body), err
 }
 
 func (data Data) marshalJson() ([]byte, error) {

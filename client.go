@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.2.14"
+const VERSION = "0.3.1"
 
 const (
 	GET     = "GET"
@@ -108,19 +108,21 @@ func (Client) trim(s string) string {
 //Формируем строк для http запроса
 func (client *Client) url(route string) string {
 
+	if route != "" {
+		if route[0] != '/' && route[0] != '?' {
+			route = "/" + route
+		}
+	}
+
 	if client.Url != nil {
-		return client.trim(client.Url.String())
+		return client.trim(client.Url.String() + route)
 	}
 
 	s := "http"
 	if client.Secure {
 		s = "https"
 	}
-	if route != "" {
-		if route[0] != '/' && route[0] != '?' {
-			route = "/" + route
-		}
-	}
+
 	if client.Route != "" {
 		if client.Route[0] != '/' {
 			client.Route = "/" + client.Route
@@ -137,12 +139,11 @@ func (client *Client) url(route string) string {
 }
 
 // Send Отправляем запрос на сервер
-func (client *Client) Send(r *Request) (*http.Response, error) {
+func (client *Client) Send(r *Request) (resp *http.Response, err error) {
 
-	//Преобразуем сируктуру в набор байт для отправки
-	var body []byte
+	//Преобразуем структуру в набор байт для отправки
+	var body bytes.Buffer
 	if r.Data != nil {
-		var err error
 		body, err = r.Data.marshal()
 		if err != nil {
 			return nil, err
@@ -168,7 +169,7 @@ func (client *Client) Send(r *Request) (*http.Response, error) {
 	req, err := http.NewRequest(
 		r.Method,
 		client.url(r.Route),
-		bytes.NewBuffer(body),
+		&body,
 	)
 	if err != nil {
 		return nil, err
@@ -197,7 +198,6 @@ func (client *Client) Send(r *Request) (*http.Response, error) {
 			}
 		}
 		return resp, err
-		//return ctxhttp.Do(*client.ctx, client.httpClient, req)
 	}
 	return client.httpClient.Do(req)
 }
@@ -207,14 +207,11 @@ func (client *Client) Execute(r *Request, responseBody interface{}) error {
 
 	//Отправляем запрос
 	resp, err := client.Send(r)
-
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-
 	if err != nil {
 		return err
 	}
+
+	defer resp.Body.Close()
 
 	//Получаем из ответа набор байт
 	body, err := ioutil.ReadAll(resp.Body)
