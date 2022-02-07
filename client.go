@@ -1,11 +1,10 @@
 package egorest
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,183 +12,135 @@ import (
 	"time"
 )
 
-const VERSION = "0.3.1"
-
-const (
-	GET     = "GET"
-	POST    = "POST"
-	PUT     = "PUT"
-	DELETE  = "DELETE"
-	HEAD    = "HEAD"
-	PATCH   = "PATCH"
-	OPTIONS = "OPTIONS"
-	TRACE   = "TRACE"
-	CONNECT = "CONNECT"
-)
+const VERSION = "0.3.2"
 
 type Client struct {
-	Url        *url.URL
-	Hostname   string
-	Port       int
-	Secure     bool
-	Timeout    int
-	Route      string
-	Proxy      *url.URL
-	BasicAuth  *BasicAuth
-	ctx        *context.Context
-	httpClient *http.Client
+	Config  Config
+	BaseUrl *url.URL
+	ctx     *context.Context
+	client  *http.Client
 }
 
-// NewClient Создаём новый экземпляр Client
-func NewClient(hostname string, port int, secure bool) *Client {
+func NewClient(config Config) (c *Client) {
 	return &Client{
-		Hostname:  hostname,
-		Port:      port,
-		Secure:    secure,
-		Proxy:     nil,
-		BasicAuth: nil,
-		Timeout:   30,
+		Config: config,
 	}
-}
-
-func NewClientByUri(uri string) (*Client, error) {
-	Url, err := url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Client{
-		Url:       Url,
-		Timeout:   30,
-		Proxy:     nil,
-		BasicAuth: nil,
-	}, nil
 }
 
 // WithContext Можем использовать контекст
-func (client *Client) WithContext(ctx context.Context) *Client {
-	client.ctx = &ctx
-	return client
-}
-
-func (client *Client) SetHttpClient(c *http.Client) *Client {
-	client.httpClient = c
-	return client
+func (c *Client) WithContext(ctx context.Context) *Client {
+	c.ctx = &ctx
+	return c
 }
 
 // SetBasicAuth Устанавливаем Basic авторизацию
-func (client *Client) SetBasicAuth(name, password string) *Client {
-	client.BasicAuth = SetBasicAuth(name, password)
-	return client
+func (c *Client) SetBasicAuth(name, password string) *Client {
+	c.Config.BasicAuth = SetBasicAuth(name, password)
+	return c
 }
 
 // SetProxy Устанавливаем прокси сервер
-func (client *Client) SetProxy(proxy string) *Client {
-	client.Proxy, _ = url.Parse(proxy)
-	return client
+func (c *Client) SetProxy(proxy string) *Client {
+	c.Config.Proxy, _ = url.Parse(proxy)
+	return c
 }
 
 // SetTimeout Устанавливаем таймаут соединения
-func (client *Client) SetTimeout(timeout int) *Client {
-	client.Timeout = timeout
-	return client
+func (c *Client) SetTimeout(timeout time.Duration) *Client {
+	c.Config.Timeout = timeout
+	return c
 }
 
-// SetRoute Добавляем маршрут, он будет подставляться перед маршрутами указанными в Request
-func (client *Client) SetRoute(route string) *Client {
-	client.Route = route
-	return client
+// SetPath Добавляем маршрут, он будет подставляться перед маршрутами указанными в Request
+func (c *Client) SetPath(path string) *Client {
+	if c.BaseUrl != nil {
+		c.BaseUrl.Path = path
+	}
+	return c
 }
 
+// SetHttpClient Установка http клиента
+func (c *Client) SetHttpClient(client *http.Client) *Client {
+	c.client = client
+	return c
+}
+
+// Замена пустых значений на %20
 func (Client) trim(s string) string {
 	return strings.ReplaceAll(s, " ", "%20")
 }
 
 //Формируем строк для http запроса
-func (client *Client) url(route string) string {
+func (c *Client) url(path string) string {
 
-	if route != "" {
-		if route[0] != '/' && route[0] != '?' {
-			route = "/" + route
+	if path != "" {
+		if path[0] != '/' && path[0] != '?' {
+			path = "/" + path
 		}
 	}
 
-	if client.Url != nil {
-		return client.trim(client.Url.String() + route)
-	}
-
-	s := "http"
-	if client.Secure {
-		s = "https"
-	}
-
-	if client.Route != "" {
-		if client.Route[0] != '/' {
-			client.Route = "/" + client.Route
-		}
-		if len(client.Route) > 0 && client.Route[len(client.Route)-1] == '/' && route != "" {
-			client.Route = client.Route[:len(client.Route)-1]
-		}
-	}
-	//Пробел меняем на спец символ
-	route = client.trim(route)
-	client.Route = client.trim(client.Route)
-
-	return fmt.Sprintf("%s://%s:%d%s%s", s, client.Hostname, client.Port, client.Route, route)
+	return c.trim(c.BaseUrl.String() + path)
 }
 
 // Send Отправляем запрос на сервер
-func (client *Client) Send(r *Request) (resp *http.Response, err error) {
+func (c *Client) Send(r *Request) (resp *http.Response, err error) {
 
 	//Преобразуем структуру в набор байт для отправки
-	var body bytes.Buffer
+	var body io.Reader
 	if r.Data != nil {
 		body, err = r.Data.marshal()
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 
-	// Инициализируем клиента и передаём все необходимое.
-	// Если http клиент пустой, то определяем его
-	if client.httpClient == nil {
-		client.httpClient = &http.Client{
-			Transport: &http.Transport{
-				//Это на случай не подтверждённого сертификата (ОПАСНО)
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-				//Прокси сервер, если nil то не используем
-				Proxy: http.ProxyURL(client.Proxy),
-			},
-			Timeout: time.Duration(client.Timeout) * time.Second,
-		}
-	}
-
-	req, err := http.NewRequest(
-		r.Method,
-		client.url(r.Route),
-		&body,
-	)
+	// Устанавливаем базовый линк
+	c.BaseUrl, err = c.Config.BaseUrl.getUrl()
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	//На случай аторизации (Только Basic)
-	if client.BasicAuth != nil {
-		req.SetBasicAuth(client.BasicAuth.Name, client.BasicAuth.Password)
+	req, err := http.NewRequest(r.Method, c.url(r.Path), body)
+	if err != nil {
+		return
+	}
+
+	//На случай авторизации (Только Basic)
+	if c.Config.BasicAuth != nil {
+		req.SetBasicAuth(c.Config.BasicAuth.Name, c.Config.BasicAuth.Password)
 	}
 
 	//Добавляем заголовки
-	req.Header.Add("User-Agent", "EgoRest/"+VERSION)
+	req.Header.Add("User-Agent", "EgoRest "+VERSION)
 	for key, value := range r.Headers {
 		req.Header.Add(key, value)
 	}
 
-	//Поехали...
-	if client.ctx != nil {
-		ctx := *client.ctx
-		resp, err := client.httpClient.Do(req.WithContext(ctx))
+	// Если клиент не назначен, то создаем по конфигам
+	if c.client == nil {
+		write, read := 0, 0
+		if c.Config.Buffers != nil {
+			write, read = c.Config.Buffers.get()
+		}
+		c.client = &http.Client{
+			Transport: &http.Transport{
+				//Прокси сервер, если nil то не используем
+				Proxy: http.ProxyURL(c.Config.Proxy),
+				//Это на случай не подтверждённого сертификата (ОПАСНО)
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: c.Config.Secure,
+				},
+				WriteBufferSize: write,
+				ReadBufferSize:  read,
+			},
+			Timeout: c.Config.Timeout,
+		}
+	}
+
+	// Поехали с контекстом...
+	if c.ctx != nil {
+		ctx := *c.ctx
+		resp, err = c.client.Do(req.WithContext(ctx))
 		if err != nil {
 			select {
 			case <-ctx.Done():
@@ -197,16 +148,18 @@ func (client *Client) Send(r *Request) (resp *http.Response, err error) {
 			default:
 			}
 		}
-		return resp, err
+		return
 	}
-	return client.httpClient.Do(req)
+
+	// Просто поехали...
+	return c.client.Do(req)
 }
 
 // Execute Отправка данных на сервер, ждём в ответе какую то структуру
-func (client *Client) Execute(r *Request, responseBody interface{}) error {
+func (c *Client) Execute(r *Request, responseBody interface{}, handler ...UnmarshalHandler) error {
 
 	//Отправляем запрос
-	resp, err := client.Send(r)
+	resp, err := c.Send(r)
 	if err != nil {
 		return err
 	}
@@ -219,18 +172,62 @@ func (client *Client) Execute(r *Request, responseBody interface{}) error {
 		return err
 	}
 
-	//Если 200 значит десериализуем данные
 	switch resp.StatusCode {
+	//Если 200 значит десериализуем данные
 	case 200:
 		//Переводим все это дело в структуру,
 		//но сначала находим в каком формате данные
-		err = getFormatBody(resp.Header.Get("Content-Type")).unmarshal(body, &responseBody)
-		if err != nil {
-			return err
-		}
-		return nil
-		//Если другие ошибки то body возвращаем в виде ошибки
+		return ContentType(resp.Header.Get(HeaderContentType)).unmarshal(body, &responseBody, handler...)
 	default:
+		//Если другие ошибки, то body возвращаем в виде ошибки
 		return errors.New(string(body))
 	}
+}
+
+// Get вызывается функция Send, только с методом Get
+func (c *Client) Get(r *Request) (*http.Response, error) {
+	r.Method = MethodGet
+	return c.Send(r)
+}
+
+// Post вызывается функция Send, только с методом Post
+func (c *Client) Post(r *Request) (*http.Response, error) {
+	r.Method = MethodPost
+	return c.Send(r)
+}
+
+// Put вызывается функция Send, только с методом Put
+func (c *Client) Put(r *Request) (*http.Response, error) {
+	r.Method = MethodPut
+	return c.Send(r)
+}
+
+// Delete вызывается функция Send, только с методом Delete
+func (c *Client) Delete(r *Request) (*http.Response, error) {
+	r.Method = MethodDelete
+	return c.Send(r)
+}
+
+// ExecuteGet вызывается функция Execute, только с методом Get
+func (c *Client) ExecuteGet(r *Request, responseBody interface{}, handler ...UnmarshalHandler) error {
+	r.Method = MethodGet
+	return c.Execute(r, responseBody, handler...)
+}
+
+// ExecutePost вызывается функция Execute, только с методом Post
+func (c *Client) ExecutePost(r *Request, responseBody interface{}, handler ...UnmarshalHandler) error {
+	r.Method = MethodPost
+	return c.Execute(r, responseBody, handler...)
+}
+
+// ExecutePut вызывается функция Execute, только с методом Put
+func (c *Client) ExecutePut(r *Request, responseBody interface{}, handler ...UnmarshalHandler) error {
+	r.Method = MethodPut
+	return c.Execute(r, responseBody, handler...)
+}
+
+// ExecuteDelete вызывается функция Execute, только с методом Delete
+func (c *Client) ExecuteDelete(r *Request, responseBody interface{}, handler ...UnmarshalHandler) error {
+	r.Method = MethodDelete
+	return c.Execute(r, responseBody, handler...)
 }

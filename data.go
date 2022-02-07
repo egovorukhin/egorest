@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"strings"
+	"io"
 )
 
 type Data struct {
@@ -15,31 +15,54 @@ type Data struct {
 
 type ContentType string
 
-func (f ContentType) String() string {
-	return string(f)
-}
+type UnmarshalHandler func([]byte, interface{}) error
+type MarshalHandler func(interface{}) ([]byte, error)
 
+// MIME types that are commonly used
 const (
-	NONE    ContentType = "none"
-	JSON    ContentType = "application/json"
-	XML     ContentType = "application/xml"
-	TextXml ContentType = "text/xml"
+	MIMETextXML               = "text/xml"
+	MIMETextHTML              = "text/html"
+	MIMETextPlain             = "text/plain"
+	MIMEApplicationXML        = "application/xml"
+	MIMEApplicationJSON       = "application/json"
+	MIMEApplicationJavaScript = "application/javascript"
+	MIMEApplicationForm       = "application/x-www-form-urlencoded"
+	MIMEOctetStream           = "application/octet-stream"
+	MIMEMultipartForm         = "multipart/form-data"
+
+	MIMETextXMLCharsetUTF8               = "text/xml; charset=utf-8"
+	MIMETextHTMLCharsetUTF8              = "text/html; charset=utf-8"
+	MIMETextPlainCharsetUTF8             = "text/plain; charset=utf-8"
+	MIMEApplicationXMLCharsetUTF8        = "application/xml; charset=utf-8"
+	MIMEApplicationJSONCharsetUTF8       = "application/json; charset=utf-8"
+	MIMEApplicationJavaScriptCharsetUTF8 = "application/javascript; charset=utf-8"
 )
 
-// Unmarshal JSON XML
-func (f ContentType) unmarshal(data []byte, v interface{}) error {
-	switch f {
-	case JSON:
-		return f.unmarshalJson(data, v)
-	case XML:
-		return f.unmarshalXml(data, v)
-	default:
-		return f.unmarshalNone(data, v)
+// Unmarshal Content-Type
+func (c ContentType) unmarshal(data []byte, v interface{}, handler ...UnmarshalHandler) error {
+	switch string(c) {
+	case MIMEApplicationJSON,
+		MIMEApplicationJSONCharsetUTF8:
+		return c.json(data, v)
+	case MIMEApplicationXML,
+		MIMEApplicationXMLCharsetUTF8:
+		return c.xml(data, v)
+	case MIMETextXML,
+		MIMETextHTML,
+		MIMETextPlain,
+		MIMETextXMLCharsetUTF8,
+		MIMETextHTMLCharsetUTF8,
+		MIMETextPlainCharsetUTF8:
+		return c.text(data, v)
 	}
+	if len(handler) > 0 {
+		return handler[0](data, v)
+	}
+	return c.none(data, v)
 }
 
 // Unmarshal JSON
-func (f ContentType) unmarshalJson(data []byte, v interface{}) error {
+func (c ContentType) json(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, v)
 	if err != nil {
 		return err
@@ -48,7 +71,7 @@ func (f ContentType) unmarshalJson(data []byte, v interface{}) error {
 }
 
 // Unmarshal XML
-func (f ContentType) unmarshalXml(data []byte, v interface{}) error {
+func (c ContentType) xml(data []byte, v interface{}) error {
 	err := xml.Unmarshal(data, v)
 	if err != nil {
 		return err
@@ -57,45 +80,42 @@ func (f ContentType) unmarshalXml(data []byte, v interface{}) error {
 }
 
 // Unmarshal TEXT or Unknown -> Text
-func (f ContentType) unmarshalNone(data []byte, v interface{}) error {
+func (c ContentType) text(data []byte, v interface{}) error {
 	v = string(data)
 	return nil
 }
 
-func getFormatBody(s string) ContentType {
-
-	//JSON
-	if strings.Contains(s, JSON.String()) {
-		return JSON
-	}
-	//XML
-	if strings.Contains(s, XML.String()) || strings.Contains(s, TextXml.String()) {
-		return XML
-	}
-
-	return NONE
+// Unmarshal none
+func (c ContentType) none(data []byte, v interface{}) error {
+	return c.text(data, v)
 }
 
-// Marshal JSON XML
-func (data Data) marshal() (bytes.Buffer, error) {
+// Marshal данных
+func (data Data) marshal(handler ...MarshalHandler) (io.Reader, error) {
 	var body []byte
 	err := errors.New("неизвестный формат данных")
 	switch ContentType(data.ContentType) {
-	case JSON:
-		body, err = data.marshalJson()
+	case MIMEApplicationJSON,
+		MIMEApplicationJSONCharsetUTF8:
+		body, err = data.json()
 		break
-	case XML:
-		body, err = data.marshalXml()
+	case MIMEApplicationXML,
+		MIMEApplicationXMLCharsetUTF8:
+		body, err = data.xml()
 		break
 	default:
-		if buf, ok := data.Body.(bytes.Buffer); ok {
+		if len(handler) > 0 {
+			body, err = handler[0](data.Body)
+			break
+		}
+		if buf, ok := data.Body.(*bytes.Buffer); ok {
 			return buf, nil
 		}
 	}
-	return *bytes.NewBuffer(body), err
+	return bytes.NewBuffer(body), err
 }
 
-func (data Data) marshalJson() ([]byte, error) {
+func (data Data) json() ([]byte, error) {
 	b, err := json.Marshal(&data.Body)
 	if err != nil {
 		return nil, err
@@ -103,7 +123,7 @@ func (data Data) marshalJson() ([]byte, error) {
 	return b, nil
 }
 
-func (data Data) marshalXml() ([]byte, error) {
+func (data Data) xml() ([]byte, error) {
 	b, err := xml.Marshal(&data.Body)
 	if err != nil {
 		return nil, err
