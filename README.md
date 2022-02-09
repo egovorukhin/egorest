@@ -23,7 +23,7 @@ go get -u github.com/egovorukhin/egorest
 ## Использование
 * **Конфигурация**
 ```golang
-    cfg := egorest.Config{
+	cfg := egorest.Config{
 		BaseUrl: egorest.BaseUrl{
 			Schema: "https",
 			Host:   "localhost",
@@ -48,10 +48,7 @@ go get -u github.com/egovorukhin/egorest
 `BasicAuth` - базовая авторизация запроса, указывается имя и пароль.
 * **Инициализация клиента**
 ```golang
-    resp, err := egorest.NewClient(cfg).Post(r)
-	if err != nil {
-		log.Fatal(err)
-	}
+    client := egorest.NewClient(cfg)
 ```
 `NewClient` - инициализирует клиента, который получет структуру `Config` описанную выше.
 * **Инициализация запроса**
@@ -83,17 +80,17 @@ go get -u github.com/egovorukhin/egorest
 * **Десириализация ответа по заголовку Content-Type**
  ```golang
     user := User{}
-		request.SetBody(egorest.MIMEApplicationJSON, user)
-		resp, _ = client.Post(request)
-		requset.JSON(user)
-		resp, _ = client.Post(request)
-		request.XML(user)
-		resp, _ = client.Post(request)
-		_ = client.Execute(request, &user)
-		_ = client.ExecuteGet(request, &user)
-		_ = client.ExecutePost(request, &user)
-		_ = client.ExecutePut(request, &user)
-		_ = client.ExecuteDelete(request, &user)
+	request.SetBody(egorest.MIMEApplicationJSON, user)
+	resp, _ = client.Post(request)
+	requset.JSON(user)
+	resp, _ = client.Post(request)
+	request.XML(user)
+	resp, _ = client.Post(request)
+	_ = client.Execute(request, &user)
+	_ = client.ExecuteGet(request, &user)
+	_ = client.ExecutePost(request, &user)
+	_ = client.ExecutePut(request, &user)
+	_ = client.ExecuteDelete(request, &user)
     _ = client.Execute(request, &user, func(contentType string, data []byte, v interface{}) error {
 		if contentType == "application/json" {
 			return json.Unmarshal(data, v)
@@ -115,10 +112,10 @@ go get -u github.com/egovorukhin/egorest
 При необходимости можно настроить `*http.Client` самостоятельно и передать в `egorest.Client` с помощью функции `SetHttpClient(client *http.Client) *Client` и тогда запрос будет отправляться вашим клиентом.
 * **Отправка файла**
 ```golang
-    r := egorest.NewRequest("api/images")
+	r := egorest.NewRequest("api/images")
 	err := r.AddFiles("image", "/images/img1.png", "/images/img2.png")
 	if err != nil {
-	    log.Fatal(err)
+		log.Fatal(err)
 	}
 	_, _ = NewClient(cfg).Post(r)
 ```
