@@ -55,8 +55,8 @@ func (r *Request) SetHeader(headers ...Header) *Request {
 	return r
 }
 
-// Устанавливаем формат данных и структуру передаваемых данных
-func (r *Request) setBody(contentType string, body interface{}) *Request {
+// SetBody Устанавливаем формат данных и структуру передаваемых данных
+func (r *Request) SetBody(contentType string, body interface{}) *Request {
 	r.addHeader(HeaderContentType, contentType)
 	r.Data = &Data{
 		ContentType: contentType,
@@ -67,19 +67,19 @@ func (r *Request) setBody(contentType string, body interface{}) *Request {
 
 // JSON Body в формате Json
 func (r *Request) JSON(body interface{}) *Request {
-	return r.setBody(MIMEApplicationJSONCharsetUTF8, body)
+	return r.SetBody(MIMEApplicationJSONCharsetUTF8, body)
 }
 
 // XML Body в формате Xml
 func (r *Request) XML(body interface{}) *Request {
-	return r.setBody(MIMEApplicationXMLCharsetUTF8, body)
+	return r.SetBody(MIMEApplicationXMLCharsetUTF8, body)
 }
 
 // AddFiles Отправка файла multipart
-func (r *Request) AddFiles(fieldName string, files ...string) (*Request, error) {
+func (r *Request) AddFiles(fieldName string, files ...string) (err error) {
 
 	if len(files) == 0 {
-		return r, nil
+		return nil
 	}
 
 	var body bytes.Buffer
@@ -87,14 +87,14 @@ func (r *Request) AddFiles(fieldName string, files ...string) (*Request, error) 
 	for _, file := range files {
 		err := r.openFile(fieldName, file, writer)
 		if err != nil {
-			return nil, err
+			return
 		}
 	}
 	// Закрываем Writer
 	_ = writer.Close()
-	r.setBody(writer.FormDataContentType(), &body)
+	r.SetBody(writer.FormDataContentType(), &body)
 
-	return r, nil
+	return
 }
 
 // Открытие файла и запись в multipart

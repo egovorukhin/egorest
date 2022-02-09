@@ -18,7 +18,7 @@ func main() {
 	}
 
 	r := egorest.NewRequest("api/rec/audio")
-	_, err := r.AddFiles("audio", "d:\\audio\\02022022_1136_700043.wav", "d:\\audio\\21012022_0730_user2.wav")
+	err := r.AddFiles("audio", "d:\\audio\\02022022_1136_700043.wav", "d:\\audio\\21012022_0730_user2.wav")
 	if err != nil {
 		log.Fatal(err)
 	}

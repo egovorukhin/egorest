@@ -15,7 +15,7 @@ type Data struct {
 
 type ContentType string
 
-type UnmarshalHandler func([]byte, interface{}) error
+type UnmarshalHandler func(contentType string, data []byte, v interface{}) error
 type MarshalHandler func(interface{}) ([]byte, error)
 
 // MIME types that are commonly used
@@ -56,7 +56,7 @@ func (c ContentType) unmarshal(data []byte, v interface{}, handler ...UnmarshalH
 		return c.text(data, v)
 	}
 	if len(handler) > 0 {
-		return handler[0](data, v)
+		return handler[0](string(c), data, v)
 	}
 	return c.none(data, v)
 }
