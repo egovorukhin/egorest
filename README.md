@@ -64,21 +64,12 @@ go get -u github.com/egovorukhin/egorest
 * **Отправка запроса**
 ```golang
     client := egorest.NewClient(cfg)
-    // Запрос без тела
     request := egorest.NewRequest("api/rec/audio")
     resp, _ := client.Send(request)
     resp, _ := client.Get(request)
     resp, _ = client.Post(request)
     resp, _ = client.Put(request)
     resp, _ = client.Delete(request)
-    // Запрос с телом
-    user := User{}
-    request.SetBody(egorest.MIMEApplicationJSON, user)
-    resp, _ = client.Post(request)
-    requset.JSON(user)
-    resp, _ = client.Post(request)
-    request.XML(user)
-    resp, _ = client.Post(request)
 ```
 `Send` - отправить запрос.
 `Get` - отправить запрос используя метод `GET`.
@@ -91,12 +82,18 @@ go get -u github.com/egovorukhin/egorest
 
 * **Десириализация ответа по заголовку Content-Type**
  ```golang
-    user = User{}
-	_ = client.Execute(request, &user)
-	_ = client.ExecuteGet(request, &user)
-	_ = client.ExecutePost(request, &user)
-	_ = client.ExecutePut(request, &user)
-	_ = client.ExecuteDelete(request, &user)
+    user := User{}
+		request.SetBody(egorest.MIMEApplicationJSON, user)
+		resp, _ = client.Post(request)
+		requset.JSON(user)
+		resp, _ = client.Post(request)
+		request.XML(user)
+		resp, _ = client.Post(request)
+		_ = client.Execute(request, &user)
+		_ = client.ExecuteGet(request, &user)
+		_ = client.ExecutePost(request, &user)
+		_ = client.ExecutePut(request, &user)
+		_ = client.ExecuteDelete(request, &user)
     _ = client.Execute(request, &user, func(contentType string, data []byte, v interface{}) error {
 		if contentType == "application/json" {
 			return json.Unmarshal(data, v)
