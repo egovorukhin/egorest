@@ -1,19 +1,19 @@
 # Rest клиент для проектов на golang
-- Описание
-- Установка
+- [Описание](README.md#описание)
+- [Установка](README.md#установка)
 - Использование
-    - Конфигурация
-    - Инициализация клиента
-    - Инициализация запроса
-    - Отправка запроса
-    - Десириализация ответа по заголовку Content-Type
-    - Использование *http.Client
-    - Отправка файла
-- Примеры
-- Лицензия
+    - [Конфигурация](README.md#конфигурация)
+    - [Инициализация клиента](README.md#инициализация-клиента)
+    - [Инициализация запроса](README.md#инициализация-запроса)
+    - [Отправка запроса](README.md#отправка-запроса)
+    - [Десириализация ответа по заголовку Content-Type](README.md#инициализация-запроса)
+    - [Использование http.Client](README.md#инициализация-запроса)
+    - [Отправка файла](README.md#инициализация-запроса)
+- [Примеры](README.md#примеры)
+- [Лицензия](README.md#лицензия)
 
 ## Описание
-__EgoRest__ - это http клиент, который подключается в виде пакета в проект на golang. В запросе нужно передать `url` и тело запроса при необходимости, и отправьте запрос. Есть возможно как получить ответ в виде структуры `http.*Response`, так и десириализовать тело ответа в структуру основываясь на заголовке `Content-Type`
+__EgoRest__ - это http клиент, который подключается в виде пакета в проект на golang. В запросе нужно передать `url` и тело запроса при необходимости, и отправьте запрос. Есть возможность как получить ответ в виде структуры `http.*Response`, так и десериализовать тело ответа в структуру основываясь на заголовке `Content-Type`
 
 ## Установка
 ```
@@ -21,7 +21,8 @@ go get -u github.com/egovorukhin/egorest
 ```
 
 ## Использование
-* **Конфигурация**
+
+### Конфигурация
 ```golang
 	cfg := egorest.Config{
 		BaseUrl: egorest.BaseUrl{
@@ -46,19 +47,19 @@ go get -u github.com/egovorukhin/egorest
 `Buffers` - входной и выходной буфер соединения
 `Proxy` - нужно указать структуру `*url.Url`
 `BasicAuth` - базовая авторизация запроса, указывается имя и пароль.
-* **Инициализация клиента**
+### Инициализация клиента
 ```golang
     client := egorest.NewClient(cfg)
 ```
 `NewClient` - инициализирует клиента, который получет структуру `Config` описанную выше.
-* **Инициализация запроса**
+### Инициализация запроса
 ```golang
     request := egorest.NewRequest("api/rec/audio")
     request = egorest.NewRequest("api/rec/audio", "GET")
 ```
 `NewRequest` - инициализирует запрос, принимается переменная `path `часть пути адреса в виде строки.
 `Method` - необязательный аргумент, по умолчанию ставится `GET`
-* **Отправка запроса**
+### Отправка запроса
 ```golang
     client := egorest.NewClient(cfg)
     request := egorest.NewRequest("api/rec/audio")
@@ -77,7 +78,7 @@ go get -u github.com/egovorukhin/egorest
 `JSON` - установка тела запроса в формате `json` и установкой заголовка `Content-Type: application/json; charset=utf-8`.
 `XML` - установка тела запроса в формате `xml` и установкой заголовка `Content-Type: application/xml; charset=utf-8`.
 
-* **Десириализация ответа по заголовку Content-Type**
+### Десириализация ответа по заголовку Content-Type
  ```golang
     user := User{}
 	request.SetBody(egorest.MIMEApplicationJSON, user)
@@ -104,13 +105,13 @@ go get -u github.com/egovorukhin/egorest
 `ExecutePut` - отправрка запроса с методом `PUT` и десериализация тела ответа на основе заголовка `Content-Type`.
 `ExecuteDelete` - отправрка запроса с методом `DELETE` и десериализация тела ответа на основе заголовка `Content-Type`.
 В функции `Execute...` есть необязательный параметр, который принимает функцию `UnmarshalHandler`. Функция должна реализовать десериализацию данных не специфичных форматов, имеет вид `func(contentType string, data []byte, v interface{}) error`, где `contentType string` возвращает значение заголовка `Content-Type`, срез байт `data []byte` и структуру `v interface{}` которую нужно заполнить.
-* **Использование http.Client**
+### Использование http.Client
 ```golang
     httpclient := &http.Client{}
     client := NewClient(cfg).SetHttpClient(httpclient)
 ```
 При необходимости можно настроить `*http.Client` самостоятельно и передать в `egorest.Client` с помощью функции `SetHttpClient(client *http.Client) *Client` и тогда запрос будет отправляться вашим клиентом.
-* **Отправка файла**
+### Отправка файла
 ```golang
 	r := egorest.NewRequest("api/images")
 	err := r.AddFiles("image", "/images/img1.png", "/images/img2.png")
