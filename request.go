@@ -85,7 +85,7 @@ func (r *Request) AddFiles(fieldName string, files ...string) (err error) {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	for _, file := range files {
-		err := r.openFile(fieldName, file, writer)
+		err = r.openFile(fieldName, file, writer)
 		if err != nil {
 			return
 		}
