@@ -104,6 +104,7 @@ func (r *Request) openFile(fieldName, file string, writer *multipart.Writer) err
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	fw, err := writer.CreateFormFile(fieldName, filepath.Base(f.Name()))
 	if err != nil {
 		return err
