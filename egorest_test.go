@@ -1,6 +1,8 @@
 package egorest
 
 import (
+	"fmt"
+	"io"
 	"testing"
 	"time"
 )
@@ -53,4 +55,37 @@ func TestClient_Execute(t *testing.T) {
 		t.Fatal(err)
 	}
 
+}
+
+func TestSetFormData(t *testing.T) {
+
+	cfg := Config{
+		BaseUrl: BaseUrl{
+			Url: "http://localhost:7474",
+		},
+		Secure:  true,
+		Timeout: time.Second * 30,
+	}
+	incidentId := "2854711"
+	values := map[string]interface{}{
+		"incidentId": incidentId,
+		"userLogin":  "govorukhin_35893",
+		"files":      []string{"C:\\downloads\\[new-bucket-1b5f4695]test.txt"},
+	}
+	r := NewRequest("/api/file")
+	err := r.SetFormData(values)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := NewClient(cfg).Post(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(string(data))
 }

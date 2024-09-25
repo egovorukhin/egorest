@@ -20,11 +20,9 @@ type Header struct {
 	Value string
 }
 
-func SetHeader(name, value string) Header {
-	return Header{
-		Name:  name,
-		Value: value,
-	}
+type FormData struct {
+	IsFile bool
+	Value  interface{}
 }
 
 // NewRequest Возвращаем экземпляр запроса
@@ -84,15 +82,45 @@ func (r *Request) AddFiles(fieldName string, files ...string) (err error) {
 
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
+	// Закрываем Writer
+	defer writer.Close()
 	for _, file := range files {
 		err = r.openFile(fieldName, file, writer)
 		if err != nil {
 			return
 		}
 	}
-	// Закрываем Writer
-	_ = writer.Close()
 	r.SetBody(writer.FormDataContentType(), &body)
+
+	return
+}
+
+func (r *Request) SetFormData(values map[string]interface{}) (err error) {
+
+	if len(values) == 0 {
+		return nil
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	defer writer.Close()
+	for key, value := range values {
+		switch t := value.(type) {
+		case string:
+			err = writer.WriteField(key, t)
+			if err != nil {
+				return err
+			}
+		case []string:
+			for _, file := range t {
+				err = r.openFile(key, file, writer)
+				if err != nil {
+					return
+				}
+			}
+			r.SetBody(writer.FormDataContentType(), &body)
+		}
+	}
 
 	return
 }

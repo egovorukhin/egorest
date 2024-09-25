@@ -5,14 +5,13 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
 
-const VERSION = "0.3.3"
+const VERSION = "0.3.6"
 
 type Client struct {
 	Config  Config
@@ -66,11 +65,11 @@ func (c *Client) SetHttpClient(client *http.Client) *Client {
 }
 
 // Замена пустых значений на %20
-func (Client) trim(s string) string {
+func (*Client) trim(s string) string {
 	return strings.ReplaceAll(s, " ", "%20")
 }
 
-//Формируем строк для http запроса
+// Формируем строк для http запроса
 func (c *Client) url(path string) string {
 
 	if path != "" {
@@ -167,7 +166,7 @@ func (c *Client) Execute(r *Request, responseBody interface{}, handler ...Unmars
 	defer resp.Body.Close()
 
 	//Получаем из ответа набор байт
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
