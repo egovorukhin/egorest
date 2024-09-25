@@ -95,7 +95,7 @@ func (r *Request) AddFiles(fieldName string, files ...string) (err error) {
 	return
 }
 
-func (r *Request) SetFormData(values map[string]interface{}) (err error) {
+func (r *Request) FormData(values map[string]interface{}) (err error) {
 
 	if len(values) == 0 {
 		return nil

@@ -73,7 +73,7 @@ func TestSetFormData(t *testing.T) {
 		"files":      []string{"C:\\downloads\\[new-bucket-1b5f4695]test.txt"},
 	}
 	r := NewRequest("/api/file")
-	err := r.SetFormData(values)
+	err := r.FormData(values)
 	if err != nil {
 		t.Fatal(err)
 	}
