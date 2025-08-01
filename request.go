@@ -119,6 +119,15 @@ func (r *Request) FormData(values map[string]interface{}) (err error) {
 				}
 			}
 			r.SetBody(writer.FormDataContentType(), &body)
+		case []io.Reader:
+			for _, file := range t {
+				fw, err := writer.CreateFormField(key)
+				if err != nil {
+					return err
+				}
+				_, err = io.Copy(fw, file)
+			}
+			r.SetBody(writer.FormDataContentType(), &body)
 		}
 	}
 
