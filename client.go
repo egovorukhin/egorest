@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.3.10"
+const VERSION = "0.3.11"
 
 type Client struct {
 	Config  Config

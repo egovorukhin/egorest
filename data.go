@@ -94,26 +94,31 @@ func (c ContentType) none(data []byte, v interface{}) error {
 
 // Marshal данных
 func (d *Data) marshal() (io.Reader, error) {
-	var body []byte
-	err := errors.New("неизвестный формат данных")
-	switch ContentType(d.ContentType) {
-	case MIMEApplicationJSON,
-		MIMEApplicationJSONCharsetUTF8:
-		body, err = d.json()
-		break
-	case MIMEApplicationXML,
-		MIMEApplicationXMLCharsetUTF8:
-		body, err = d.xml()
-		break
-	default:
-		if d.Handler != nil {
-			d.ContentType, body, err = d.Handler(d.ContentType, d.Body)
-			break
-		}
-		if buf, ok := d.Body.(*bytes.Buffer); ok {
-			return buf, nil
+
+	var (
+		body []byte
+		err  error
+	)
+	if d.Handler != nil {
+		d.ContentType, body, err = d.Handler(d.ContentType, d.Body)
+	} else {
+
+		err = errors.New("неизвестный формат данных")
+
+		switch ContentType(d.ContentType) {
+		case MIMEApplicationJSON,
+			MIMEApplicationJSONCharsetUTF8:
+			body, err = d.json()
+		case MIMEApplicationXML,
+			MIMEApplicationXMLCharsetUTF8:
+			body, err = d.xml()
+		default:
+			if buf, ok := d.Body.(*bytes.Buffer); ok {
+				return buf, nil
+			}
 		}
 	}
+
 	return bytes.NewBuffer(body), err
 }
 
