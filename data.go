@@ -93,7 +93,7 @@ func (c ContentType) none(data []byte, v interface{}) error {
 }
 
 // Marshal данных
-func (data Data) marshal(handler ...MarshalHandler) (io.Reader, error) {
+func (data Data) marshal() (io.Reader, error) {
 	var body []byte
 	err := errors.New("неизвестный формат данных")
 	switch ContentType(data.ContentType) {
@@ -106,8 +106,8 @@ func (data Data) marshal(handler ...MarshalHandler) (io.Reader, error) {
 		body, err = data.xml()
 		break
 	default:
-		if len(handler) > 0 {
-			body, err = handler[0](data.Body)
+		if data.Handler != nil {
+			body, err = data.Handler(data.Body)
 			break
 		}
 		if buf, ok := data.Body.(*bytes.Buffer); ok {
