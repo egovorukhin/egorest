@@ -18,7 +18,7 @@ type Data struct {
 type ContentType string
 
 type UnmarshalHandler func(contentType string, data []byte, v interface{}) error
-type MarshalHandler func(interface{}) ([]byte, error)
+type MarshalHandler func(contentType string, data interface{}) (string, []byte, error)
 
 // MIME types that are commonly used
 const (
@@ -93,40 +93,40 @@ func (c ContentType) none(data []byte, v interface{}) error {
 }
 
 // Marshal данных
-func (data Data) marshal() (io.Reader, error) {
+func (d *Data) marshal() (io.Reader, error) {
 	var body []byte
 	err := errors.New("неизвестный формат данных")
-	switch ContentType(data.ContentType) {
+	switch ContentType(d.ContentType) {
 	case MIMEApplicationJSON,
 		MIMEApplicationJSONCharsetUTF8:
-		body, err = data.json()
+		body, err = d.json()
 		break
 	case MIMEApplicationXML,
 		MIMEApplicationXMLCharsetUTF8:
-		body, err = data.xml()
+		body, err = d.xml()
 		break
 	default:
-		if data.Handler != nil {
-			body, err = data.Handler(data.Body)
+		if d.Handler != nil {
+			d.ContentType, body, err = d.Handler(d.ContentType, d.Body)
 			break
 		}
-		if buf, ok := data.Body.(*bytes.Buffer); ok {
+		if buf, ok := d.Body.(*bytes.Buffer); ok {
 			return buf, nil
 		}
 	}
 	return bytes.NewBuffer(body), err
 }
 
-func (data Data) json() ([]byte, error) {
-	b, err := json.Marshal(&data.Body)
+func (d *Data) json() ([]byte, error) {
+	b, err := json.Marshal(&d.Body)
 	if err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-func (data Data) xml() ([]byte, error) {
-	b, err := xml.Marshal(&data.Body)
+func (d *Data) xml() ([]byte, error) {
+	b, err := xml.Marshal(&d.Body)
 	if err != nil {
 		return nil, err
 	}

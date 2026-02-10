@@ -39,6 +39,21 @@ func NewRequest(path string, method ...string) *Request {
 
 // Добавляем заголовки
 func (r *Request) addHeader(name, value string) {
+
+	if r.Headers == nil {
+		r.Headers = map[string]string{
+			name: value,
+		}
+		return
+	}
+
+	if v, ok := r.Headers[name]; ok {
+		r.Headers[name] = v + ";" + value
+	}
+}
+
+// Устанавливаем заголовки
+func (r *Request) setHeader(name, value string) {
 	if r.Headers == nil {
 		r.Headers = map[string]string{}
 	}
@@ -48,6 +63,14 @@ func (r *Request) addHeader(name, value string) {
 // SetHeader установка заголовков
 func (r *Request) SetHeader(headers ...Header) *Request {
 	for _, h := range headers {
+		r.setHeader(h.Name, h.Value)
+	}
+	return r
+}
+
+// AddHeader добавление в заголовок
+func (r *Request) AddHeader(headers ...Header) *Request {
+	for _, h := range headers {
 		r.addHeader(h.Name, h.Value)
 	}
 	return r
@@ -55,7 +78,7 @@ func (r *Request) SetHeader(headers ...Header) *Request {
 
 // SetBody Устанавливаем формат данных и структуру передаваемых данных
 func (r *Request) SetBody(contentType string, body interface{}, handler ...MarshalHandler) *Request {
-	r.addHeader(HeaderContentType, contentType)
+	r.setHeader(HeaderContentType, contentType)
 	r.Data = &Data{
 		ContentType: contentType,
 		Body:        body,

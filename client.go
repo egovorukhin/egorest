@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.3.9"
+const VERSION = "0.3.10"
 
 type Client struct {
 	Config  Config
@@ -91,6 +91,7 @@ func (c *Client) Send(r *Request) (resp *http.Response, err error) {
 		if err != nil {
 			return
 		}
+		r.setHeader(HeaderContentType, r.Data.ContentType)
 	}
 
 	// Устанавливаем базовый линк
