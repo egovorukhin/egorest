@@ -11,6 +11,8 @@ import (
 type Data struct {
 	ContentType string
 	Body        interface{}
+
+	Handler MarshalHandler
 }
 
 type ContentType string

@@ -54,11 +54,22 @@ func (r *Request) SetHeader(headers ...Header) *Request {
 }
 
 // SetBody Устанавливаем формат данных и структуру передаваемых данных
-func (r *Request) SetBody(contentType string, body interface{}) *Request {
+func (r *Request) SetBody(contentType string, body interface{}, handler ...MarshalHandler) *Request {
 	r.addHeader(HeaderContentType, contentType)
 	r.Data = &Data{
 		ContentType: contentType,
 		Body:        body,
+	}
+	if len(handler) > 0 {
+		r.Data.Handler = handler[0]
+	}
+	return r
+}
+
+// SetMarshalHandler Установка обработчика сериализации
+func (r *Request) SetMarshalHandler(handler MarshalHandler) *Request {
+	if r.Data != nil {
+		r.Data.Handler = handler
 	}
 	return r
 }
