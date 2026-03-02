@@ -129,7 +129,34 @@ func (r *Request) AddFiles(fieldName string, files ...string) (err error) {
 	return
 }
 
-func (r *Request) FormData(values map[string]interface{}) (err error) {
+// IFormType Интерфейс для работы с multipart и типом формы
+type IFormType interface {
+	CreateForm(fieldName string, w *multipart.Writer) (io.Writer, error)
+}
+
+// FormFile Форма с файлами
+type FormFile struct {
+	Filename string
+}
+
+func (f *FormFile) CreateForm(fieldName string, w *multipart.Writer) (io.Writer, error) {
+	return w.CreateFormFile(fieldName, f.Filename)
+}
+
+// FormText Форма с текстом
+type FormText string
+
+func (f *FormText) CreateForm(fieldName string, w *multipart.Writer) (io.Writer, error) {
+	return w.CreateFormField(fieldName)
+}
+
+// Key Структура для значений FormData
+type Key struct {
+	Name     string
+	FormType IFormType
+}
+
+func (r *Request) FormData(values map[Key]interface{}) (err error) {
 
 	if len(values) == 0 {
 		return nil
@@ -137,25 +164,37 @@ func (r *Request) FormData(values map[string]interface{}) (err error) {
 
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
+
 	defer writer.Close()
+
 	for key, value := range values {
+
 		switch t := value.(type) {
 		case string:
-			err = writer.WriteField(key, t)
+
+			err = writer.WriteField(key.Name, t)
 			if err != nil {
 				return err
 			}
+
 		case []string:
+
 			for _, file := range t {
-				err = r.openFile(key, file, writer)
+				err = r.openFile(key.Name, file, writer)
 				if err != nil {
 					return
 				}
 			}
 			r.SetBody(writer.FormDataContentType(), &body)
+
 		case []io.Reader:
+
+			if key.FormType == nil {
+				key.FormType = new(FormText)
+			}
+
 			for _, file := range t {
-				fw, err := writer.CreateFormField(key)
+				fw, err := key.FormType.CreateForm(key.Name, writer)
 				if err != nil {
 					return err
 				}

@@ -1,6 +1,7 @@
 package egorest
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"testing"
@@ -66,11 +67,18 @@ func TestSetFormData(t *testing.T) {
 		Secure:  true,
 		Timeout: time.Second * 30,
 	}
+
+	s := `{"hello":"world"}`
+
+	file := bytes.NewBuffer([]byte(s))
+
 	incidentId := "2854711"
-	values := map[string]interface{}{
-		"incidentId": incidentId,
-		"userLogin":  "govorukhin_35893",
-		"files":      []string{"C:\\downloads\\[new-bucket-1b5f4695]test.txt"},
+	values := map[Key]interface{}{
+		Key{"incidentId", nil}: incidentId,
+		Key{"userLogin", nil}:  "govorukhin_35893",
+		//Key{"files", nil}:                             []string{"C:\\downloads\\[new-bucket-1b5f4695]test.txt"},
+		Key{"file", &FormFile{Filename: "file.json"}}: []io.Reader{file},
+		Key{"text", nil}: []io.Reader{file},
 	}
 	r := NewRequest("/api/file")
 	err := r.FormData(values)
