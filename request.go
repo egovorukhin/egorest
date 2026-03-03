@@ -131,32 +131,84 @@ func (r *Request) AddFiles(fieldName string, files ...string) (err error) {
 
 // IFormType Интерфейс для работы с multipart и типом формы
 type IFormType interface {
-	CreateForm(fieldName string, w *multipart.Writer) (io.Writer, error)
+	CreateForm(fieldName string, w *multipart.Writer) error
 }
 
 // FormFile Форма с файлами
-type FormFile struct {
+type FormFile []File
+
+type File struct {
 	Filename string
+	r        io.Reader
 }
 
-func (f *FormFile) CreateForm(fieldName string, w *multipart.Writer) (io.Writer, error) {
-	return w.CreateFormFile(fieldName, f.Filename)
+func NewFile(filename string, r io.Reader) File {
+	return File{
+		Filename: filename,
+		r:        r,
+	}
+}
+
+func NewFormFile(files ...File) *FormFile {
+	formFile := FormFile{}
+	formFile = append(formFile, files...)
+	return &formFile
+}
+
+func (f *FormFile) Add(filename string, r io.Reader) *FormFile {
+	*f = append(*f, File{
+		Filename: filename,
+		r:        r,
+	})
+	return f
+}
+
+func (f *FormFile) CreateForm(fieldName string, w *multipart.Writer) error {
+
+	for _, file := range *f {
+
+		fw, err := w.CreateFormFile(fieldName, file.Filename)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(fw, file.r)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // FormText Форма с текстом
-type FormText string
+type FormText []io.Reader
 
-func (f *FormText) CreateForm(fieldName string, w *multipart.Writer) (io.Writer, error) {
-	return w.CreateFormField(fieldName)
+func NewFormText(r ...io.Reader) *FormText {
+	formText := FormText{}
+	formText = append(formText, r...)
+	return &formText
 }
 
-// Key Структура для значений FormData
-type Key struct {
-	Name     string
-	FormType IFormType
+func (f *FormText) CreateForm(fieldName string, w *multipart.Writer) error {
+
+	for _, file := range *f {
+
+		fw, err := w.CreateFormField(fieldName)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(fw, file)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (r *Request) FormData(values map[Key]interface{}) (err error) {
+func (r *Request) FormData(values map[string]interface{}) (err error) {
 
 	if len(values) == 0 {
 		return nil
@@ -172,7 +224,7 @@ func (r *Request) FormData(values map[Key]interface{}) (err error) {
 		switch t := value.(type) {
 		case string:
 
-			err = writer.WriteField(key.Name, t)
+			err = writer.WriteField(key, t)
 			if err != nil {
 				return err
 			}
@@ -180,25 +232,17 @@ func (r *Request) FormData(values map[Key]interface{}) (err error) {
 		case []string:
 
 			for _, file := range t {
-				err = r.openFile(key.Name, file, writer)
+				err = r.openFile(key, file, writer)
 				if err != nil {
 					return
 				}
 			}
 			r.SetBody(writer.FormDataContentType(), &body)
 
-		case []io.Reader:
+		case IFormType:
 
-			if key.FormType == nil {
-				key.FormType = new(FormText)
-			}
-
-			for _, file := range t {
-				fw, err := key.FormType.CreateForm(key.Name, writer)
-				if err != nil {
-					return err
-				}
-				_, err = io.Copy(fw, file)
+			if err = t.CreateForm(key, writer); err != nil {
+				return
 			}
 			r.SetBody(writer.FormDataContentType(), &body)
 		}

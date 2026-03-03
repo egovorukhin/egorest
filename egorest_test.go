@@ -73,12 +73,13 @@ func TestSetFormData(t *testing.T) {
 	file := bytes.NewBuffer([]byte(s))
 
 	incidentId := "2854711"
-	values := map[Key]interface{}{
-		Key{"incidentId", nil}: incidentId,
-		Key{"userLogin", nil}:  "govorukhin_35893",
+	values := map[string]interface{}{
+		"incidentId": incidentId,
+		"userLogin":  "govorukhin_35893",
 		//Key{"files", nil}:                             []string{"C:\\downloads\\[new-bucket-1b5f4695]test.txt"},
-		Key{"file", &FormFile{Filename: "file.json"}}: []io.Reader{file},
-		Key{"text", nil}: []io.Reader{file},
+		"file":  NewFormFile().Add("file.json", file),
+		"text":  &FormText{file},
+		"value": NewFormText(file),
 	}
 	r := NewRequest("/api/file")
 	err := r.FormData(values)
